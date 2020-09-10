@@ -1,13 +1,21 @@
+@import-normalize;
+@import '~@livechat/design-system/dist/design-system.css';
+@import url('https://fonts.googleapis.com/css?family=Source+Sans+Pro&display=swap');
+
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-family: 'Source Sans Pro', sans-serif;
+  color: #424D57;
+  background: white;
+  font-size: 15px;
+}
+
+h2 {
+  font-size: 18px;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  monospace;
 }
