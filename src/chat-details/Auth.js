@@ -12,24 +12,20 @@ const Auth = ({ children, signIn, clientId }) => {
         authInstance.current = accountsSdk.init({
             client_id: clientId,
             onIdentityFetched: (error, data) => {
-                setLoading(false);
                 if (data) {
-                    setAuth(data);
                     authRef.token = data.access_token;
+                    setAuth(data);
                 }
                 if (error) {
                     console.error(error);
                 }
+                setLoading(false);
             }
         });
     }, [clientId]);
 
     if (loading) {
-        return (
-            <div>
-                <Loading />
-            </div>
-        );
+        return <Loading />;
     }
 
     return (

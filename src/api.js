@@ -18,5 +18,10 @@ export const getFiles = customerId => {
                 "Authorization": `Bearer ${authRef.token}`,
             }
         }
-    );
+    ).then(resp => resp.data.map(
+        f => ({
+            ...f,
+            created_at: new Date(f.created_at),
+        })
+    ));
 }

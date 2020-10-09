@@ -1,133 +1,197 @@
 /**@jsx jsx */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, Fragment } from "react";
 import { css, jsx } from "@emotion/core";
 import Header from "./Header";
 import * as LiveChat from "@livechat/agent-app-sdk";
 import Loading from "../Loading";
 import {getFiles} from "../api";
-import Auth from "./Auth";
-import LogInWithLiveChat from "./LogInWithLivechat";
+import { Button } from "@livechat/design-system";
+import CheckCircleIcon from 'react-material-icon-svg/dist/CheckCircleIcon';
+import AlertCircleIcon from 'react-material-icon-svg/dist/AlertCircleIcon';
 
-const LC_CLIENT_ID = process.env.REACT_APP_CLIENT_ID;
-
-const fullscreenCss = css`
-  position: fixed;
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;
 
 const containerCss = css`
     padding: 10px;
     
-    table.data {
-        width: 100%;
-    }
-    
-    td:first-of-type {
-        padding-bottom: 5px;
-        font-weight: bold;
-    }
-    .charge {
-        display: flex;
-        align-items: center;
-        svg {
-            margin-right: 10px;
-            color: #a2260d;
+   .file {
+        position: relative;
+        margin-bottom: 1em;
+        background: #f7f7f7;
+        .icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
         }
-    }
-    .charge.succeeded svg {
-        fill: #2a9558;
-    }
-    .options {
-        button:not(:first-of-type) {
-            margin-top: 10px;
+        .material-check-circle-icon path {
+            fill: #2a9558;
         }
-    }
-    .subscription {
-        strong {
+        
+        .material-alert-circle-icon path {
+            fill: #a2260d;
+        }
+        &.FOUND {
+            background: #fbeae7;
+        }
+        border-radius: 5px;
+        padding: 1em;
+        
+        span { 
+            display: block;
+        }
+        
+        .name {
             font-weight: bold;
         }
-        ul {
-            list-style: none;
-            padding: 0;
+        
+        .found {
+            margin-top: 1em;
+            color: #D93312;
+            font-weight: bold;
         }
-        ul li {
-            margin: 0;
-            padding: 0;
-            margin-bottom: 5px;
+        
+        .download {
+            margin-top: 1em;
+        }
+        
+        .date {
+            font-size: 0.9em;
+            font-style: italic;
         }
     }
+    
+
+
 `;
 
 const ChatDetails = () => {
     const [customer, setCustomer] = useState(null);
+    const [files, setFiles] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const widget = useRef();
 
     useEffect(() => {
-        let widget = null;
         const handler = customer => {
             setCustomer(customer);
+            setLoading(true);
             console.log(customer);
         };
 
         LiveChat.createDetailsWidget().then(w => {
-            widget = w;
-            widget.on("customer_profile", handler);
+            widget.current = w;
+            widget.current.on("customer_profile", handler);
         });
 
         return () => {
-            if (widget) {
-                widget.off("*", handler);
+            if (widget.current) {
+                widget.current.off("*", handler);
             }
         }
-    });
+    }, []);
 
     useEffect(() => {
         if (!customer) {
             return;
         }
-        const t = setInterval(() => {
-            getFiles(customer.id).then(response => {
-                console.log(response.data);
+
+        widget.current.modifySection({
+            title: "Last scanned files",
+            components: [{
+                type: "title",
+                data: {
+                    title: "loading",
+                },
+            }]
+        });
+
+        let current = true;
+
+        const get = () => {
+            getFiles(customer.id).then(files => {
+                if (current) {
+                    console.log(files);
+                    setFiles(files);
+                    setLoading(false);
+                }
             }).catch(err => {
                 console.error("Bad request", err);
             });
-        }, 3000);
+        }
+
+        get();
+        const t = setInterval(get, 3000);
 
         return () => {
             clearInterval(t);
+            current = false;
+        };
+    }, [customer]);
+
+    useEffect(() => {
+        if(!widget.current) {
+            return;
         }
-    }, [customer])
-    if(!customer) {
+
+        if (files.length > 0) {
+        widget.current.modifySection({
+            title: "Last scanned files",
+            components: files.slice(0, 3).map(f => ({
+                type: "title",
+                data: {
+                    title: f.name,
+                    description: f.status === "OK" ? "File safe" : "File infected!",
+                    clickable: true,
+                    openApp: true,
+                },
+            }))
+        })} else {
+            widget.current.modifySection({
+                title: "Last scanned files",
+                components: [{
+                    type: "title",
+                    data: {
+                        title: "No files found",
+                    },
+                }]
+            });
+        }
+    }, [files])
+
+    if(loading) {
         return <Loading />;
     }
 
     return (
-        <Auth
-            clientId={LC_CLIENT_ID}
-            signIn={authInstanceRef => (
-                <div css={fullscreenCss}>
-                    <LogInWithLiveChat
-                        onClick={() => authInstanceRef.current.openPopup()}
-                    />
-                </div>
+        <div css={containerCss}>
+            <Header>Files sent by customer</Header>
+            {!files.length && (
+                <em>Found no files.</em>
             )}
-        >
-            <div css={containerCss}>
-                <Header>Files sent by customer</Header>
-                <table className="data">
-                    <tbody>
-                    <tr>
-                        <td>ID</td>
-                        <td>dsa</td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
-        </Auth>
+
+            {!!files.length && files.map(f => (
+                    <div className={"file " + f.status} key={f.event_id}>
+                        <span className="name">{f.name}</span>
+                        <span className="date">Received {f.created_at.toLocaleDateString()} {f.created_at.toLocaleTimeString()}</span>
+                        {f.status === "FOUND" && (
+                            <Fragment>
+                                <span className="found">Infected with {f.signature}</span>
+                                <AlertCircleIcon className="icon"/>
+                            </Fragment>
+                        )}
+                        {f.status === "OK" && (
+                            <Fragment>
+                                <form action={f.url} target="_blank">
+                                    <Button size="compact" kind="primary" className="download" type="submit">
+                                        Download
+                                    </Button>
+                                </form>
+                                <CheckCircleIcon  className="icon"/>
+                            </Fragment>
+                        )}
+                    </div>
+                )
+            )}
+        </div>
     );
 }
 
