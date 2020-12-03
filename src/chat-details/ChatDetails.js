@@ -41,7 +41,7 @@ const containerCss = css`
         }
         
         .name {
-            width: 200px;
+            width: 340px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
