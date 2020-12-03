@@ -6,7 +6,7 @@ import Header from "./Header";
 import * as LiveChat from "@livechat/agent-app-sdk";
 import Loading from "../Loading";
 import {getFiles} from "../api";
-import { Button } from "@livechat/design-system";
+import { Button, Banner } from "@livechat/design-system";
 import CheckCircleIcon from 'react-material-icon-svg/dist/CheckCircleIcon';
 import AlertCircleIcon from 'react-material-icon-svg/dist/AlertCircleIcon';
 
@@ -41,6 +41,10 @@ const containerCss = css`
         }
         
         .name {
+            width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
             font-weight: bold;
         }
         
@@ -56,7 +60,7 @@ const containerCss = css`
         
         .date {
             font-size: 0.9em;
-            font-style: italic;
+            margin-top: 4px;
         }
     }
     
@@ -161,23 +165,26 @@ const ChatDetails = () => {
         return <Loading />;
     }
 
+    if (!files.length) {
+       return <Banner type="success">Customer sent no files.</Banner>
+    }
+
     return (
         <div css={containerCss}>
             <Header>Files sent by customer</Header>
-            {!files.length && (
-                <em>Found no files.</em>
-            )}
 
-            {!!files.length && files.map(f => (
+            {files.map(f => (
                     <div className={"file " + f.status} key={f.event_id}>
-                        <span className="name">{f.name}</span>
-                        <span className="date">Received {f.created_at.toLocaleDateString()} {f.created_at.toLocaleTimeString()}</span>
+                        <span className="name" title={f.name}>{f.name}</span>
+                        <span className="date">Received on {f.created_at.toLocaleDateString()} at {f.created_at.toLocaleTimeString()}</span>
+
                         {f.status === "FOUND" && (
                             <Fragment>
                                 <span className="found">Infected with {f.signature}</span>
                                 <AlertCircleIcon className="icon"/>
                             </Fragment>
                         )}
+
                         {f.status === "OK" && (
                             <Fragment>
                                 <form action={f.url} target="_blank">
