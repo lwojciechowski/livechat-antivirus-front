@@ -166,7 +166,11 @@ const ChatDetails = () => {
     }
 
     if (!files.length) {
-       return <Banner type="success">Customer sent no files.</Banner>
+       return (
+           <div css={containerCss}>
+               <Banner type="success">Customer sent no files.</Banner>
+           </div>
+       );
     }
 
     return (
